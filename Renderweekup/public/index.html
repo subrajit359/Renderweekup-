@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Renderweekup — Ping Monitor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0c0a;
+      --card: #111411;
+      --border: #1e221e;
+      --fg: #e8ede8;
+      --muted: #5a6a5a;
+      --green: #39d353;
+      --red: #f44;
+      --yellow: #f5a623;
+      --font-mono: 'JetBrains Mono', 'Fira Mono', 'Consolas', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .title-group { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .title {
+      display: flex; align-items: center; gap: 0.75rem;
+      font-size: 1.6rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    }
+
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+
+    .target { color: var(--muted); font-size: 0.8rem; }
+    .target span { color: var(--fg); }
+
+    .next-ping { text-align: right; }
+    .next-ping label { display: block; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem; }
+    .next-ping .countdown { font-size: 1.4rem; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 1.25rem;
+    }
+
+    .stat-card label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card .value { font-size: 2.2rem; font-weight: 700; }
+    .green { color: var(--green); }
+    .red { color: var(--red); }
+    .yellow { color: var(--yellow); }
+
+    section { margin-bottom: 2.5rem; }
+
+    .section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem; margin-bottom: 1.25rem;
+    }
+
+    .section-title {
+      font-size: 1rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    }
+
+    .avg-badge { font-size: 0.85rem; }
+    .avg-badge span { font-size: 1.1rem; font-weight: 700; }
+
+    /* Chart */
+    #chart-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 1rem 1rem 0.5rem;
+      height: 180px;
+      position: relative;
+    }
+
+    #chart-wrap canvas { display: block; width: 100% !important; height: 140px !important; }
+
+    .chart-legend {
+      text-align: center; font-size: 0.65rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-top: 0.5rem;
+    }
+
+    #chart-placeholder {
+      display: flex; align-items: center; justify-content: center;
+      height: 140px; color: var(--muted); font-size: 0.8rem;
+    }
+
+    /* Feed */
+    .feed {
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+
+    .feed-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+      flex-wrap: wrap;
+      transition: background 0.15s;
+    }
+
+    .feed-row:last-child { border-bottom: none; }
+    .feed-row:hover { background: rgba(255,255,255,0.02); }
+
+    .feed-left { display: flex; align-items: center; gap: 0.75rem; }
+
+    .indicator { width: 6px; height: 36px; flex-shrink: 0; }
+
+    .status-code { font-weight: 700; font-size: 1rem; }
+
+    .badge {
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
+      padding: 2px 6px; border: 1px solid; text-transform: uppercase;
+    }
+
+    .badge.pass { color: var(--green); border-color: rgba(57,211,83,0.3); background: rgba(57,211,83,0.08); }
+    .badge.fail { color: var(--red); border-color: rgba(255,68,68,0.3); background: rgba(255,68,68,0.08); }
+
+    .ts { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+
+    .feed-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+
+    .latency { font-size: 0.8rem; }
+    .latency span { font-weight: 700; font-size: 1rem; }
+
+    .response-body {
+      font-size: 0.65rem; color: var(--muted);
+      background: rgba(255,255,255,0.03);
+      padding: 2px 6px;
+      max-width: 260px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .empty { padding: 3rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+    button#ping-btn {
+      background: transparent;
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    button#ping-btn:hover { background: rgba(57,211,83,0.1); }
+    button#ping-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .max-width { max-width: 960px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<div class="max-width">
+
+  <header>
+    <div class="title-group">
+      <div class="title">
+        <div class="dot"></div>
+        Renderweekup
+      </div>
+      <div class="target">Target: <span id="target-url">—</span></div>
+    </div>
+    <div class="next-ping">
+      <label>Next Ping In</label>
+      <div class="countdown" id="countdown">--:--</div>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat-card">
+      <label>Uptime <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></label>
+      <div class="value green" id="uptime">—</div>
+    </div>
+    <div class="stat-card">
+      <label>Total Pings</label>
+      <div class="value" id="total">—</div>
+    </div>
+    <div class="stat-card">
+      <label>Success <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></label>
+      <div class="value green" id="success">—</div>
+    </div>
+    <div class="stat-card">
+      <label>Failures <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></label>
+      <div class="value red" id="failures">—</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-header">
+      <div class="section-title">Response Time</div>
+      <div class="avg-badge" id="avg-badge"></div>
+    </div>
+    <div id="chart-wrap">
+      <div id="chart-placeholder">Waiting for more pings to build the chart...</div>
+      <canvas id="chart" style="display:none"></canvas>
+      <div class="chart-legend">Green = success · Red = failure · Dashed = average</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-header">
+      <div class="section-title">Telemetry Feed</div>
+      <button id="ping-btn">Ping Now</button>
+    </div>
+    <div class="feed" id="feed">
+      <div class="empty">No data yet. First ping is in progress...</div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const fmt = (ms) => {
+  const s = Math.floor(ms / 1000), m = Math.floor(s / 60);
+  return `${String(m).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+};
+
+const timeAgo = (ts) => {
+  const diff = Date.now() - new Date(ts).getTime();
+  if (diff < 60000) return `${Math.floor(diff/1000)}s ago`;
+  if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+  return `${Math.floor(diff/3600000)}h ago`;
+};
+
+const latencyColor = (ms) => ms > 1000 ? 'red' : ms > 500 ? 'yellow' : 'green';
+
+let nextPingTime = null;
+let intervalMs = 600000;
+
+// Countdown
+setInterval(() => {
+  if (!nextPingTime) return;
+  const diff = nextPingTime - Date.now();
+  document.getElementById('countdown').textContent = diff > 0 ? fmt(diff) : '00:00';
+}, 1000);
+
+// Chart
+const canvas = document.getElementById('chart');
+const ctx = canvas.getContext('2d');
+
+function drawChart(records) {
+  if (records.length < 2) return;
+  const data = [...records].reverse();
+  canvas.style.display = 'block';
+  document.getElementById('chart-placeholder').style.display = 'none';
+
+  const W = canvas.parentElement.clientWidth - 32;
+  const H = 140;
+  canvas.width = W;
+  canvas.height = H;
+
+  const max = Math.max(...data.map(d => d.elapsedMs)) * 1.15;
+  const pad = { top: 10, right: 10, bottom: 30, left: 50 };
+  const w = W - pad.left - pad.right;
+  const h = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const toX = (i) => pad.left + (i / (data.length - 1)) * w;
+  const toY = (v) => pad.top + h - (v / max) * h;
+
+  const avg = data.reduce((s, d) => s + d.elapsedMs, 0) / data.length;
+
+  // Grid
+  ctx.strokeStyle = '#1e221e';
+  ctx.lineWidth = 1;
+  [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+    const y = pad.top + h * (1 - t);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
+    ctx.fillStyle = '#5a6a5a';
+    ctx.font = '10px monospace';
+    ctx.fillText(Math.round(max * t) + 'ms', 2, y + 4);
+  });
+
+  // X labels
+  ctx.fillStyle = '#5a6a5a';
+  ctx.font = '10px monospace';
+  const step = Math.max(1, Math.floor(data.length / 6));
+  data.forEach((d, i) => {
+    if (i % step !== 0 && i !== data.length - 1) return;
+    const x = toX(i);
+    const t = new Date(d.timestamp);
+    const label = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+    ctx.fillText(label, x - 12, H - 5);
+  });
+
+  // Area fill
+  const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + h);
+  gradient.addColorStop(0, 'rgba(57,211,83,0.25)');
+  gradient.addColorStop(1, 'rgba(57,211,83,0)');
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(data[0].elapsedMs));
+  data.forEach((d, i) => ctx.lineTo(toX(i), toY(d.elapsedMs)));
+  ctx.lineTo(toX(data.length - 1), pad.top + h);
+  ctx.lineTo(toX(0), pad.top + h);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#39d353';
+  ctx.lineWidth = 2;
+  data.forEach((d, i) => {
+    i === 0 ? ctx.moveTo(toX(i), toY(d.elapsedMs)) : ctx.lineTo(toX(i), toY(d.elapsedMs));
+  });
+  ctx.stroke();
+
+  // Avg line
+  const avgY = toY(avg);
+  ctx.beginPath();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#5a6a5a';
+  ctx.lineWidth = 1;
+  ctx.moveTo(pad.left, avgY); ctx.lineTo(pad.left + w, avgY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Dots
+  data.forEach((d, i) => {
+    ctx.beginPath();
+    ctx.arc(toX(i), toY(d.elapsedMs), 4, 0, Math.PI * 2);
+    ctx.fillStyle = d.success ? '#39d353' : '#f44';
+    ctx.strokeStyle = '#0a0c0a';
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  // Avg badge
+  const color = avg > 1000 ? '#f44' : avg > 500 ? '#f5a623' : '#39d353';
+  document.getElementById('avg-badge').innerHTML =
+    `<span style="color:${color};font-weight:700;font-size:1.1rem">${Math.round(avg)}ms</span> avg`;
+}
+
+// Feed
+function renderFeed(records) {
+  const feed = document.getElementById('feed');
+  if (!records.length) {
+    feed.innerHTML = '<div class="empty">No data yet. First ping is in progress...</div>';
+    return;
+  }
+  feed.innerHTML = records.map(r => {
+    const lc = latencyColor(r.elapsedMs);
+    return `
+      <div class="feed-row">
+        <div class="feed-left">
+          <div class="indicator" style="background:${r.success ? 'var(--green)' : 'var(--red)'}"></div>
+          <div>
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <span class="status-code">${r.status ? 'HTTP ' + r.status : 'ERR_CONN'}</span>
+              <span class="badge ${r.success ? 'pass' : 'fail'}">${r.success ? 'PASS' : 'FAIL'}</span>
+            </div>
+            <div class="ts">
+              ${new Date(r.timestamp).toLocaleTimeString()} &middot; ${timeAgo(r.timestamp)}
+            </div>
+          </div>
+        </div>
+        <div class="feed-right">
+          <div class="latency"><span class="${lc}">${r.elapsedMs}ms</span></div>
+          ${r.error ? `<div style="font-size:0.65rem;color:var(--red);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.error}</div>` : ''}
+          ${r.responseBody ? `<div class="response-body">${r.responseBody}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// Fetch data
+async function loadData() {
+  const res = await fetch('/api/ping-history');
+  const data = await res.json();
+  document.getElementById('target-url').textContent = data.targetUrl;
+  intervalMs = data.intervalMs;
+  const uptime = data.totalPings ? ((data.successCount / data.totalPings) * 100).toFixed(2) : '0.00';
+  document.getElementById('uptime').textContent = uptime + '%';
+  document.getElementById('total').textContent = data.totalPings;
+  document.getElementById('success').textContent = data.successCount;
+  document.getElementById('failures').textContent = data.failureCount;
+  if (data.records.length > 0) {
+    nextPingTime = new Date(new Date(data.records[0].timestamp).getTime() + data.intervalMs);
+  }
+  drawChart(data.records);
+  renderFeed(data.records);
+}
+
+// Ping now
+document.getElementById('ping-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('ping-btn');
+  btn.disabled = true; btn.textContent = 'Pinging...';
+  await fetch('/api/ping-now');
+  await loadData();
+  btn.disabled = false; btn.textContent = 'Ping Now';
+});
+
+loadData();
+setInterval(loadData, 2000);
+</script>
+</body>
+</html>
