@@ -414,18 +414,29 @@ function renderFeed(records) {
 async function loadData() {
   const res = await fetch('/api/ping-history');
   const data = await res.json();
-  document.getElementById('target-url').textContent = data.targetUrl;
+
+  // Support both old single-target and new multi-target format
+  const targets = data.targets || [];
+  const first = targets[0];
+
+  const targetUrl = first ? first.target.url : (data.targetUrl || '');
+  const totalPings = targets.reduce((s, t) => s + t.totalPings, 0) || data.totalPings || 0;
+  const successCount = targets.reduce((s, t) => s + t.successCount, 0) || data.successCount || 0;
+  const failureCount = targets.reduce((s, t) => s + t.failureCount, 0) || data.failureCount || 0;
+  const records = first ? first.records : (data.records || []);
+
+  document.getElementById('target-url').textContent = targetUrl;
   intervalMs = data.intervalMs;
-  const uptime = data.totalPings ? ((data.successCount / data.totalPings) * 100).toFixed(2) : '0.00';
+  const uptime = totalPings ? ((successCount / totalPings) * 100).toFixed(2) : '0.00';
   document.getElementById('uptime').textContent = uptime + '%';
-  document.getElementById('total').textContent = data.totalPings;
-  document.getElementById('success').textContent = data.successCount;
-  document.getElementById('failures').textContent = data.failureCount;
-  if (data.records.length > 0) {
-    nextPingTime = new Date(new Date(data.records[0].timestamp).getTime() + data.intervalMs);
+  document.getElementById('total').textContent = totalPings;
+  document.getElementById('success').textContent = successCount;
+  document.getElementById('failures').textContent = failureCount;
+  if (records.length > 0) {
+    nextPingTime = new Date(new Date(records[0].timestamp).getTime() + data.intervalMs);
   }
-  drawChart(data.records);
-  renderFeed(data.records);
+  drawChart(records);
+  renderFeed(records);
 }
 
 // Ping now
