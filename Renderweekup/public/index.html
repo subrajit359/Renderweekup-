@@ -6,450 +6,425 @@
   <title>Renderweekup — Ping Monitor</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0a0c0a;
-      --card: #111411;
-      --border: #1e221e;
-      --fg: #e8ede8;
-      --muted: #5a6a5a;
-      --green: #39d353;
-      --red: #f44;
-      --yellow: #f5a623;
-      --font-mono: 'JetBrains Mono', 'Fira Mono', 'Consolas', monospace;
+      --bg: #0a0c0a; --card: #111411; --border: #1e221e;
+      --fg: #e8ede8; --muted: #5a6a5a; --green: #39d353;
+      --red: #f44; --yellow: #f5a623;
+      --font: 'JetBrains Mono', 'Fira Mono', 'Consolas', monospace;
     }
+    body { background: var(--bg); color: var(--fg); font-family: var(--font); min-height: 100vh; padding: 2rem; }
 
-    body {
-      background: var(--bg);
-      color: var(--fg);
-      font-family: var(--font-mono);
-      min-height: 100vh;
-      padding: 2rem;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 1.5rem;
-      margin-bottom: 2rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .title-group { display: flex; flex-direction: column; gap: 0.5rem; }
-
-    .title {
-      display: flex; align-items: center; gap: 0.75rem;
-      font-size: 1.6rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
-    }
-
-    .dot {
-      width: 10px; height: 10px; border-radius: 50%; background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-    }
-
-    .target { color: var(--muted); font-size: 0.8rem; }
-    .target span { color: var(--fg); }
-
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+    .title { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .subtitle { color: var(--muted); font-size: 0.75rem; margin-top: 0.4rem; }
     .next-ping { text-align: right; }
-    .next-ping label { display: block; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem; }
-    .next-ping .countdown { font-size: 1.4rem; }
+    .next-ping label { display: block; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem; }
+    .countdown { font-size: 1.4rem; }
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2.5rem;
-    }
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); padding: 1.25rem; }
+    .stat-card label { display: block; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+    .stat-card .val { font-size: 2rem; font-weight: 700; }
+    .val.green { color: var(--green); }
+    .val.red { color: var(--red); }
 
-    .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 1.25rem;
-    }
+    /* Section */
+    .section { margin-bottom: 2.5rem; }
+    .section-header { display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1rem; }
+    .method-badge { font-size: 0.65rem; font-weight: 700; padding: 0.2rem 0.5rem; border: 1px solid; letter-spacing: 0.08em; }
+    .method-badge.get { color: var(--green); border-color: #39d35340; }
+    .method-badge.post { color: var(--yellow); border-color: #f5a62340; }
+    .section-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; }
+    .section-count { color: var(--muted); font-size: 0.8rem; }
 
-    .stat-card label {
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
-      margin-bottom: 0.5rem;
-    }
+    /* Target card */
+    .target-card { background: var(--card); border: 1px solid var(--border); margin-bottom: 0.75rem; }
+    .target-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1rem; cursor: pointer; }
+    .target-row:hover { background: #151815; }
+    .target-info { display: flex; align-items: flex-start; gap: 0.75rem; min-width: 0; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .status-dot.ok { background: var(--green); }
+    .status-dot.fail { background: var(--red); }
+    .status-dot.idle { background: var(--muted); }
+    .target-url { font-size: 0.8rem; font-weight: 700; word-break: break-all; }
+    .target-meta { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-top: 0.35rem; font-size: 0.7rem; color: var(--muted); }
+    .target-meta .ok { color: var(--green); font-weight: 700; }
+    .target-meta .fail { color: var(--red); }
+    .target-meta .latency-good { color: var(--green); }
+    .target-meta .latency-warn { color: var(--yellow); }
+    .target-meta .latency-bad { color: var(--red); }
+    .target-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+    .icon-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1rem; padding: 0.25rem; line-height: 1; }
+    .icon-btn:hover { color: var(--fg); }
+    .icon-btn.del:hover { color: var(--red); }
 
-    .stat-card .value { font-size: 2.2rem; font-weight: 700; }
-    .green { color: var(--green); }
-    .red { color: var(--red); }
-    .yellow { color: var(--yellow); }
+    /* Expanded body */
+    .target-body { display: none; border-top: 1px solid var(--border); padding: 1rem; }
+    .target-body.open { display: block; }
+    .mini-chart { background: #0d0f0d; border: 1px solid var(--border); padding: 0.75rem; margin-bottom: 1rem; position: relative; }
+    canvas.chart { width: 100%; height: 90px; display: block; }
+    .chart-avg { font-size: 0.65rem; color: var(--muted); text-align: right; margin-top: 0.4rem; }
+    .feed { max-height: 220px; overflow-y: auto; }
+    .feed-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid #1e221e40; font-size: 0.7rem; }
+    .feed-left { display: flex; align-items: center; gap: 0.5rem; }
+    .feed-ind { width: 4px; height: 20px; flex-shrink: 0; }
+    .status-code { font-weight: 700; }
+    .ts { color: var(--muted); margin-top: 0.15rem; }
+    .feed-right { text-align: right; }
+    .resp-body { background: #0d0f0d; padding: 0.2rem 0.4rem; font-size: 0.65rem; color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 0.2rem; }
+    .empty { color: var(--muted); font-size: 0.75rem; padding: 1rem 0; text-align: center; }
 
-    section { margin-bottom: 2.5rem; }
-
-    .section-header {
-      display: flex; justify-content: space-between; align-items: center;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 1rem; margin-bottom: 1.25rem;
-    }
-
-    .section-title {
-      font-size: 1rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
-    }
-
-    .avg-badge { font-size: 0.85rem; }
-    .avg-badge span { font-size: 1.1rem; font-weight: 700; }
-
-    /* Chart */
-    #chart-wrap {
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 1rem 1rem 0.5rem;
-      height: 180px;
-      position: relative;
-    }
-
-    #chart-wrap canvas { display: block; width: 100% !important; height: 140px !important; }
-
-    .chart-legend {
-      text-align: center; font-size: 0.65rem; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-top: 0.5rem;
-    }
-
-    #chart-placeholder {
-      display: flex; align-items: center; justify-content: center;
-      height: 140px; color: var(--muted); font-size: 0.8rem;
-    }
-
-    /* Feed */
-    .feed {
-      background: var(--card);
-      border: 1px solid var(--border);
-    }
-
-    .feed-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.85rem 1rem;
-      border-bottom: 1px solid var(--border);
-      gap: 1rem;
-      flex-wrap: wrap;
-      transition: background 0.15s;
-    }
-
-    .feed-row:last-child { border-bottom: none; }
-    .feed-row:hover { background: rgba(255,255,255,0.02); }
-
-    .feed-left { display: flex; align-items: center; gap: 0.75rem; }
-
-    .indicator { width: 6px; height: 36px; flex-shrink: 0; }
-
-    .status-code { font-weight: 700; font-size: 1rem; }
-
-    .badge {
-      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
-      padding: 2px 6px; border: 1px solid; text-transform: uppercase;
-    }
-
-    .badge.pass { color: var(--green); border-color: rgba(57,211,83,0.3); background: rgba(57,211,83,0.08); }
-    .badge.fail { color: var(--red); border-color: rgba(255,68,68,0.3); background: rgba(255,68,68,0.08); }
-
-    .ts { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
-
-    .feed-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; }
-
-    .latency { font-size: 0.8rem; }
-    .latency span { font-weight: 700; font-size: 1rem; }
-
-    .response-body {
-      font-size: 0.65rem; color: var(--muted);
-      background: rgba(255,255,255,0.03);
-      padding: 2px 6px;
-      max-width: 260px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-
-    .empty { padding: 3rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
-
-    button#ping-btn {
-      background: transparent;
-      border: 1px solid var(--green);
-      color: var(--green);
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 6px 14px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    button#ping-btn:hover { background: rgba(57,211,83,0.1); }
-    button#ping-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .max-width { max-width: 960px; margin: 0 auto; }
+    /* Add form */
+    .add-btn { width: 100%; border: 1px dashed var(--border); background: none; color: var(--muted); cursor: pointer; padding: 0.6rem; font-family: var(--font); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    .add-btn:hover { color: var(--fg); border-color: #3a3a3a; }
+    .add-form { background: var(--card); border: 1px solid var(--border); padding: 1rem; margin-top: 0.5rem; display: none; }
+    .add-form.open { display: block; }
+    .form-title { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.75rem; font-weight: 700; }
+    input, textarea { width: 100%; background: #0d0f0d; border: 1px solid var(--border); color: var(--fg); font-family: var(--font); font-size: 0.75rem; padding: 0.5rem 0.75rem; margin-bottom: 0.5rem; outline: none; }
+    input:focus, textarea:focus { border-color: var(--green); }
+    textarea { resize: none; height: 70px; }
+    .form-actions { display: flex; gap: 0.5rem; }
+    .btn { background: var(--green); color: #000; border: none; cursor: pointer; font-family: var(--font); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.5rem 1rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn.ghost { background: none; color: var(--muted); border: 1px solid var(--border); }
+    .btn.ghost:hover { color: var(--fg); }
   </style>
 </head>
 <body>
-<div class="max-width">
 
-  <header>
-    <div class="title-group">
-      <div class="title">
-        <div class="dot"></div>
-        Renderweekup
-      </div>
-      <div class="target">Target: <span id="target-url">—</span></div>
-    </div>
-    <div class="next-ping">
-      <label>Next Ping In</label>
-      <div class="countdown" id="countdown">--:--</div>
-    </div>
-  </header>
+<header>
+  <div>
+    <div class="title"><span class="dot"></span>Renderweekup</div>
+    <div class="subtitle" id="subtitle">Loading...</div>
+  </div>
+  <div class="next-ping">
+    <label>Next Ping In</label>
+    <div class="countdown" id="countdown">--:--</div>
+  </div>
+</header>
 
-  <div class="stats">
-    <div class="stat-card">
-      <label>Uptime <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></label>
-      <div class="value green" id="uptime">—</div>
-    </div>
-    <div class="stat-card">
-      <label>Total Pings</label>
-      <div class="value" id="total">—</div>
-    </div>
-    <div class="stat-card">
-      <label>Success <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></label>
-      <div class="value green" id="success">—</div>
-    </div>
-    <div class="stat-card">
-      <label>Failures <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></label>
-      <div class="value red" id="failures">—</div>
+<div class="stats">
+  <div class="stat-card"><label>Uptime</label><div class="val green" id="uptime">0.00%</div></div>
+  <div class="stat-card"><label>Total Pings</label><div class="val" id="total">0</div></div>
+  <div class="stat-card"><label>Success</label><div class="val green" id="success">0</div></div>
+  <div class="stat-card"><label>Failures</label><div class="val red" id="failures">0</div></div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <span class="method-badge get">GET</span>
+    <span class="section-title">Requests</span>
+    <span class="section-count" id="get-count">(0)</span>
+  </div>
+  <div id="get-list"></div>
+  <button class="add-btn" id="get-add-btn">+ Add GET Request</button>
+  <div class="add-form" id="get-form">
+    <div class="form-title">New GET Target</div>
+    <input type="text" id="get-url" placeholder="https://example.com/api/health" />
+    <div class="form-actions">
+      <button class="btn" id="get-submit">Add</button>
+      <button class="btn ghost" id="get-cancel">Cancel</button>
     </div>
   </div>
+</div>
 
-  <section>
-    <div class="section-header">
-      <div class="section-title">Response Time</div>
-      <div class="avg-badge" id="avg-badge"></div>
+<div class="section">
+  <div class="section-header">
+    <span class="method-badge post">POST</span>
+    <span class="section-title">Requests</span>
+    <span class="section-count" id="post-count">(0)</span>
+  </div>
+  <div id="post-list"></div>
+  <button class="add-btn" id="post-add-btn">+ Add POST Request</button>
+  <div class="add-form" id="post-form">
+    <div class="form-title">New POST Target</div>
+    <input type="text" id="post-url" placeholder="https://example.com/api/endpoint" />
+    <textarea id="post-body" placeholder='{"key": "value"} — optional request body'></textarea>
+    <div class="form-actions">
+      <button class="btn" id="post-submit">Add</button>
+      <button class="btn ghost" id="post-cancel">Cancel</button>
     </div>
-    <div id="chart-wrap">
-      <div id="chart-placeholder">Waiting for more pings to build the chart...</div>
-      <canvas id="chart" style="display:none"></canvas>
-      <div class="chart-legend">Green = success · Red = failure · Dashed = average</div>
-    </div>
-  </section>
-
-  <section>
-    <div class="section-header">
-      <div class="section-title">Telemetry Feed</div>
-      <button id="ping-btn">Ping Now</button>
-    </div>
-    <div class="feed" id="feed">
-      <div class="empty">No data yet. First ping is in progress...</div>
-    </div>
-  </section>
-
+  </div>
 </div>
 
 <script>
-const fmt = (ms) => {
-  const s = Math.floor(ms / 1000), m = Math.floor(s / 60);
-  return `${String(m).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
-};
-
-const timeAgo = (ts) => {
-  const diff = Date.now() - new Date(ts).getTime();
-  if (diff < 60000) return `${Math.floor(diff/1000)}s ago`;
-  if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
-  return `${Math.floor(diff/3600000)}h ago`;
-};
-
-const latencyColor = (ms) => ms > 1000 ? 'red' : ms > 500 ? 'yellow' : 'green';
-
+let intervalMs = 120000;
 let nextPingTime = null;
-let intervalMs = 600000;
+let allTargets = [];
 
-// Countdown
-setInterval(() => {
-  if (!nextPingTime) return;
-  const diff = nextPingTime - Date.now();
-  document.getElementById('countdown').textContent = diff > 0 ? fmt(diff) : '00:00';
-}, 1000);
+// ── Countdown ──────────────────────────────────────────────────────────────
+function updateCountdown() {
+  const el = document.getElementById('countdown');
+  const now = Date.now();
+  const ms = intervalMs - (now % intervalMs);
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+setInterval(updateCountdown, 1000);
+updateCountdown();
 
-// Chart
-const canvas = document.getElementById('chart');
-const ctx = canvas.getContext('2d');
+// ── Helpers ────────────────────────────────────────────────────────────────
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - new Date(ts)) / 1000);
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s/60)}m ago`;
+  return `${Math.floor(s/3600)}h ago`;
+}
+function latencyClass(ms) {
+  return ms > 1000 ? 'latency-bad' : ms > 500 ? 'latency-warn' : 'latency-good';
+}
 
-function drawChart(records) {
-  if (records.length < 2) return;
+// ── Mini chart ─────────────────────────────────────────────────────────────
+function drawChart(canvas, records) {
   const data = [...records].reverse();
-  canvas.style.display = 'block';
-  document.getElementById('chart-placeholder').style.display = 'none';
-
-  const W = canvas.parentElement.clientWidth - 32;
-  const H = 140;
+  const W = canvas.offsetWidth || 600;
+  const H = 90;
   canvas.width = W;
   canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
 
-  const max = Math.max(...data.map(d => d.elapsedMs)) * 1.15;
-  const pad = { top: 10, right: 10, bottom: 30, left: 50 };
+  if (data.length < 2) {
+    ctx.fillStyle = '#5a6a5a';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Waiting for more pings...', W / 2, H / 2);
+    return;
+  }
+
+  const pad = { top: 8, bottom: 20, left: 44, right: 8 };
   const w = W - pad.left - pad.right;
   const h = H - pad.top - pad.bottom;
-
-  ctx.clearRect(0, 0, W, H);
+  const max = Math.max(...data.map(d => d.elapsedMs), 100);
+  const avg = data.reduce((s, d) => s + d.elapsedMs, 0) / data.length;
 
   const toX = (i) => pad.left + (i / (data.length - 1)) * w;
   const toY = (v) => pad.top + h - (v / max) * h;
 
-  const avg = data.reduce((s, d) => s + d.elapsedMs, 0) / data.length;
-
   // Grid
-  ctx.strokeStyle = '#1e221e';
-  ctx.lineWidth = 1;
-  [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+  ctx.strokeStyle = '#1e221e'; ctx.lineWidth = 1;
+  [0, 0.5, 1].forEach(t => {
     const y = pad.top + h * (1 - t);
     ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
-    ctx.fillStyle = '#5a6a5a';
-    ctx.font = '10px monospace';
-    ctx.fillText(Math.round(max * t) + 'ms', 2, y + 4);
+    ctx.fillStyle = '#5a6a5a'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(max * t) + 'ms', pad.left - 4, y + 3);
   });
 
   // X labels
-  ctx.fillStyle = '#5a6a5a';
-  ctx.font = '10px monospace';
-  const step = Math.max(1, Math.floor(data.length / 6));
+  const step = Math.max(1, Math.floor(data.length / 5));
   data.forEach((d, i) => {
     if (i % step !== 0 && i !== data.length - 1) return;
-    const x = toX(i);
     const t = new Date(d.timestamp);
-    const label = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
-    ctx.fillText(label, x - 12, H - 5);
+    ctx.fillStyle = '#5a6a5a'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`, toX(i), H - 3);
   });
 
-  // Area fill
-  const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + h);
-  gradient.addColorStop(0, 'rgba(57,211,83,0.25)');
-  gradient.addColorStop(1, 'rgba(57,211,83,0)');
+  // Area
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + h);
+  grad.addColorStop(0, 'rgba(57,211,83,0.25)');
+  grad.addColorStop(1, 'rgba(57,211,83,0)');
   ctx.beginPath();
   ctx.moveTo(toX(0), toY(data[0].elapsedMs));
   data.forEach((d, i) => ctx.lineTo(toX(i), toY(d.elapsedMs)));
   ctx.lineTo(toX(data.length - 1), pad.top + h);
   ctx.lineTo(toX(0), pad.top + h);
   ctx.closePath();
-  ctx.fillStyle = gradient;
-  ctx.fill();
+  ctx.fillStyle = grad; ctx.fill();
 
   // Line
-  ctx.beginPath();
-  ctx.strokeStyle = '#39d353';
-  ctx.lineWidth = 2;
-  data.forEach((d, i) => {
-    i === 0 ? ctx.moveTo(toX(i), toY(d.elapsedMs)) : ctx.lineTo(toX(i), toY(d.elapsedMs));
-  });
+  ctx.beginPath(); ctx.strokeStyle = '#39d353'; ctx.lineWidth = 1.5;
+  data.forEach((d, i) => i === 0 ? ctx.moveTo(toX(i), toY(d.elapsedMs)) : ctx.lineTo(toX(i), toY(d.elapsedMs)));
   ctx.stroke();
 
   // Avg line
-  const avgY = toY(avg);
-  ctx.beginPath();
-  ctx.setLineDash([4, 4]);
-  ctx.strokeStyle = '#5a6a5a';
-  ctx.lineWidth = 1;
-  ctx.moveTo(pad.left, avgY); ctx.lineTo(pad.left + w, avgY);
-  ctx.stroke();
+  ctx.beginPath(); ctx.setLineDash([4, 4]); ctx.strokeStyle = '#5a6a5a'; ctx.lineWidth = 1;
+  ctx.moveTo(pad.left, toY(avg)); ctx.lineTo(pad.left + w, toY(avg)); ctx.stroke();
   ctx.setLineDash([]);
 
   // Dots
   data.forEach((d, i) => {
-    ctx.beginPath();
-    ctx.arc(toX(i), toY(d.elapsedMs), 4, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(toX(i), toY(d.elapsedMs), 3, 0, Math.PI * 2);
     ctx.fillStyle = d.success ? '#39d353' : '#f44';
-    ctx.strokeStyle = '#0a0c0a';
-    ctx.lineWidth = 2;
-    ctx.fill();
-    ctx.stroke();
+    ctx.strokeStyle = '#0a0c0a'; ctx.lineWidth = 1.5;
+    ctx.fill(); ctx.stroke();
   });
 
   // Avg badge
-  const color = avg > 1000 ? '#f44' : avg > 500 ? '#f5a623' : '#39d353';
-  document.getElementById('avg-badge').innerHTML =
-    `<span style="color:${color};font-weight:700;font-size:1.1rem">${Math.round(avg)}ms</span> avg`;
+  const avgEl = canvas.parentElement.querySelector('.chart-avg');
+  if (avgEl) {
+    const col = avg > 1000 ? '#f44' : avg > 500 ? '#f5a623' : '#39d353';
+    avgEl.innerHTML = `avg <span style="color:${col};font-weight:700">${Math.round(avg)}ms</span>`;
+  }
 }
 
-// Feed
-function renderFeed(records) {
-  const feed = document.getElementById('feed');
+// ── Render feed ────────────────────────────────────────────────────────────
+function renderFeed(container, records) {
   if (!records.length) {
-    feed.innerHTML = '<div class="empty">No data yet. First ping is in progress...</div>';
+    container.innerHTML = '<div class="empty">No pings yet</div>';
     return;
   }
-  feed.innerHTML = records.map(r => {
-    const lc = latencyColor(r.elapsedMs);
+  container.innerHTML = records.map(r => {
+    const lc = latencyClass(r.elapsedMs);
     return `
       <div class="feed-row">
         <div class="feed-left">
-          <div class="indicator" style="background:${r.success ? 'var(--green)' : 'var(--red)'}"></div>
+          <div class="feed-ind" style="background:${r.success ? 'var(--green)' : 'var(--red)'}"></div>
           <div>
-            <div style="display:flex;align-items:center;gap:0.5rem">
-              <span class="status-code">${r.status ? 'HTTP ' + r.status : 'ERR_CONN'}</span>
-              <span class="badge ${r.success ? 'pass' : 'fail'}">${r.success ? 'PASS' : 'FAIL'}</span>
-            </div>
-            <div class="ts">
-              ${new Date(r.timestamp).toLocaleTimeString()} &middot; ${timeAgo(r.timestamp)}
-            </div>
+            <div class="status-code">${r.status ? 'HTTP ' + r.status : 'ERR'}</div>
+            <div class="ts">${new Date(r.timestamp).toLocaleTimeString()} · ${timeAgo(r.timestamp)}</div>
           </div>
         </div>
         <div class="feed-right">
-          <div class="latency"><span class="${lc}">${r.elapsedMs}ms</span></div>
-          ${r.error ? `<div style="font-size:0.65rem;color:var(--red);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.error}</div>` : ''}
-          ${r.responseBody ? `<div class="response-body">${r.responseBody}</div>` : ''}
+          <div class="${lc}">${r.elapsedMs}ms</div>
+          ${r.responseBody ? `<div class="resp-body" title="${r.responseBody}">${r.responseBody}</div>` : ''}
+          ${r.error ? `<div style="color:var(--red);font-size:0.65rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.error}</div>` : ''}
         </div>
       </div>`;
   }).join('');
 }
 
-// Fetch data
+// ── Render target card ─────────────────────────────────────────────────────
+function renderTargetCard(th) {
+  const { target, records, totalPings, successCount, failureCount } = th;
+  const last = records[0];
+  const uptime = totalPings ? ((successCount / totalPings) * 100).toFixed(1) : '0.0';
+  const dotClass = last ? (last.success ? 'ok' : 'fail') : 'idle';
+  const lastLatency = last ? `<span class="${latencyClass(last.elapsedMs)}">last ${last.elapsedMs}ms</span>` : '';
+
+  const card = document.createElement('div');
+  card.className = 'target-card';
+  card.dataset.id = target.id;
+  card.innerHTML = `
+    <div class="target-row">
+      <div class="target-info">
+        <div class="status-dot ${dotClass}"></div>
+        <div>
+          <div class="target-url">${target.url}</div>
+          ${target.body ? `<div style="font-size:0.65rem;color:var(--muted);margin-top:0.2rem;word-break:break-all">body: ${target.body}</div>` : ''}
+          <div class="target-meta">
+            <span class="ok">${uptime}% up</span>
+            <span>${successCount} ok</span>
+            <span class="fail">${failureCount} fail</span>
+            <span>${totalPings} total</span>
+            ${lastLatency}
+          </div>
+        </div>
+      </div>
+      <div class="target-actions">
+        <button class="icon-btn toggle-btn" title="Expand">▾</button>
+        ${target.id !== 'default' ? `<button class="icon-btn del" data-id="${target.id}" title="Delete">✕</button>` : ''}
+      </div>
+    </div>
+    <div class="target-body">
+      <div class="mini-chart">
+        <canvas class="chart"></canvas>
+        <div class="chart-avg"></div>
+      </div>
+      <div class="feed"></div>
+    </div>`;
+
+  // Toggle expand
+  const row = card.querySelector('.target-row');
+  const body = card.querySelector('.target-body');
+  const toggleBtn = card.querySelector('.toggle-btn');
+  row.addEventListener('click', (e) => {
+    if (e.target.classList.contains('del')) return;
+    body.classList.toggle('open');
+    toggleBtn.textContent = body.classList.contains('open') ? '▴' : '▾';
+    if (body.classList.contains('open')) {
+      const canvas = card.querySelector('canvas');
+      drawChart(canvas, records);
+      renderFeed(card.querySelector('.feed'), records);
+    }
+  });
+
+  // Delete
+  const delBtn = card.querySelector('.del');
+  if (delBtn) {
+    delBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('Remove this target?')) return;
+      await fetch(`/api/targets/${target.id}`, { method: 'DELETE' });
+      loadData();
+    });
+  }
+
+  return card;
+}
+
+// ── Render sections ────────────────────────────────────────────────────────
+function renderSection(listId, countId, targets) {
+  const list = document.getElementById(listId);
+  const countEl = document.getElementById(countId);
+  countEl.textContent = `(${targets.length})`;
+  list.innerHTML = '';
+  targets.forEach(th => list.appendChild(renderTargetCard(th)));
+}
+
+// ── Load data ──────────────────────────────────────────────────────────────
 async function loadData() {
   const res = await fetch('/api/ping-history');
   const data = await res.json();
-
-  // Support both old single-target and new multi-target format
-  const targets = data.targets || [];
-  const first = targets[0];
-
-  const targetUrl = first ? first.target.url : (data.targetUrl || '');
-  const totalPings = targets.reduce((s, t) => s + t.totalPings, 0) || data.totalPings || 0;
-  const successCount = targets.reduce((s, t) => s + t.successCount, 0) || data.successCount || 0;
-  const failureCount = targets.reduce((s, t) => s + t.failureCount, 0) || data.failureCount || 0;
-  const records = first ? first.records : (data.records || []);
-
-  document.getElementById('target-url').textContent = targetUrl;
+  allTargets = data.targets || [];
   intervalMs = data.intervalMs;
+
+  // Aggregate stats
+  const totalPings = allTargets.reduce((s, t) => s + t.totalPings, 0);
+  const successCount = allTargets.reduce((s, t) => s + t.successCount, 0);
+  const failureCount = allTargets.reduce((s, t) => s + t.failureCount, 0);
   const uptime = totalPings ? ((successCount / totalPings) * 100).toFixed(2) : '0.00';
+
+  document.getElementById('subtitle').textContent = `Pinging ${allTargets.length} target${allTargets.length !== 1 ? 's' : ''} every 2 minutes`;
   document.getElementById('uptime').textContent = uptime + '%';
   document.getElementById('total').textContent = totalPings;
   document.getElementById('success').textContent = successCount;
   document.getElementById('failures').textContent = failureCount;
-  if (records.length > 0) {
-    nextPingTime = new Date(new Date(records[0].timestamp).getTime() + data.intervalMs);
-  }
-  drawChart(records);
-  renderFeed(records);
+
+  const gets = allTargets.filter(t => t.target.method === 'GET');
+  const posts = allTargets.filter(t => t.target.method === 'POST');
+  renderSection('get-list', 'get-count', gets);
+  renderSection('post-list', 'post-count', posts);
 }
 
-// Ping now
-document.getElementById('ping-btn').addEventListener('click', async () => {
-  const btn = document.getElementById('ping-btn');
-  btn.disabled = true; btn.textContent = 'Pinging...';
-  await fetch('/api/ping-now');
-  await loadData();
-  btn.disabled = false; btn.textContent = 'Ping Now';
-});
-
 loadData();
-setInterval(loadData, 2000);
+setInterval(loadData, 5000);
+
+// ── Add target forms ───────────────────────────────────────────────────────
+function setupForm(addBtnId, formId, cancelId, submitId, method) {
+  const addBtn = document.getElementById(addBtnId);
+  const form = document.getElementById(formId);
+  const cancelBtn = document.getElementById(cancelId);
+  const submitBtn = document.getElementById(submitId);
+
+  addBtn.addEventListener('click', () => { form.classList.add('open'); addBtn.style.display = 'none'; });
+  cancelBtn.addEventListener('click', () => { form.classList.remove('open'); addBtn.style.display = ''; });
+  submitBtn.addEventListener('click', async () => {
+    const url = document.getElementById(`${method.toLowerCase()}-url`).value.trim();
+    if (!url) return;
+    const bodyEl = document.getElementById(`${method.toLowerCase()}-body`);
+    const body = bodyEl ? bodyEl.value.trim() || null : null;
+    submitBtn.disabled = true; submitBtn.textContent = 'Adding...';
+    await fetch('/api/targets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, method, body }),
+    });
+    document.getElementById(`${method.toLowerCase()}-url`).value = '';
+    if (bodyEl) bodyEl.value = '';
+    form.classList.remove('open');
+    addBtn.style.display = '';
+    submitBtn.disabled = false; submitBtn.textContent = 'Add';
+    loadData();
+  });
+}
+
+setupForm('get-add-btn', 'get-form', 'get-cancel', 'get-submit', 'GET');
+setupForm('post-add-btn', 'post-form', 'post-cancel', 'post-submit', 'POST');
 </script>
 </body>
 </html>
